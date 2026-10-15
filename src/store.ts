@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 const KEY = 'keisool:v1';
 
 export type HistoryEntry = { id: string; tool: string; at: number; summary: string; state: unknown };
-export type Memo = { id: string; text: string; createdAt: number; updatedAt: number; pinned?: boolean };
+export type Memo = { id: string; text: string; createdAt: number; updatedAt: number; pinned?: boolean; color?: string; deletedAt?: number };
 
 type Data = {
   favorites: string[];
@@ -14,7 +14,7 @@ type Data = {
   history: HistoryEntry[];
   memos: Memo[];
   teamId: string | null; // 今日のワークで使うチーム
-  settings: { openLast: boolean };
+  settings: { openLast: boolean; memoView?: 'grid' | 'list' };
 };
 
 const EMPTY: Data = { favorites: [], recent: [], states: {}, history: [], memos: [], teamId: null, settings: { openLast: true } };
@@ -25,7 +25,11 @@ function load(): Data {
     const raw = localStorage.getItem(KEY);
     if (!raw) return structuredClone(EMPTY);
     const d = JSON.parse(raw);
-    return { ...structuredClone(EMPTY), ...d, settings: { ...EMPTY.settings, ...(d.settings ?? {}) } };
+    const out: Data = { ...structuredClone(EMPTY), ...d, settings: { ...EMPTY.settings, ...(d.settings ?? {}) } };
+    // ゴミ箱のメモは30日で完全に消す
+    const limit = Date.now() - 30 * 864e5;
+    out.memos = (out.memos ?? []).filter((m) => !m.deletedAt || m.deletedAt > limit);
+    return out;
   } catch {
     return structuredClone(EMPTY);
   }
@@ -107,8 +111,26 @@ export function toggleMemoPin(id: string) {
   commit({ ...data, memos: data.memos.map((m) => (m.id === id ? { ...m, pinned: !m.pinned } : m)) });
 }
 
+export function updateMemo(id: string, patch: Partial<Memo>) {
+  commit({ ...data, memos: data.memos.map((m) => (m.id === id ? { ...m, ...patch } : m)) });
+}
+
+/** ゴミ箱へ（30日後に自動で消える） */
+export function trashMemo(id: string) {
+  updateMemo(id, { deletedAt: Date.now() });
+}
+
+export function restoreMemo(id: string) {
+  updateMemo(id, { deletedAt: undefined });
+}
+
+/** 完全に消す（ゴミ箱から・空のメモ） */
 export function deleteMemo(id: string) {
   commit({ ...data, memos: data.memos.filter((m) => m.id !== id) });
+}
+
+export function emptyTrash() {
+  commit({ ...data, memos: data.memos.filter((m) => !m.deletedAt) });
 }
 
 export const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;

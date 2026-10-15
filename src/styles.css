@@ -1065,62 +1065,202 @@ svg {
 }
 
 /* ---------- メモ ---------- */
+.c-none { --mc: var(--line-2); --mbg: var(--surface); }
+.c-red { --mc: #ff6b6b; }
+.c-orange { --mc: #ff9f43; }
+.c-yellow { --mc: #ffd166; }
+.c-green { --mc: #5ad08a; }
+.c-cyan { --mc: #2ee6d6; }
+.c-blue { --mc: #6aa8ff; }
+.c-purple { --mc: #b18cff; }
+.c-red,
+.c-orange,
+.c-yellow,
+.c-green,
+.c-cyan,
+.c-blue,
+.c-purple {
+  --mbg: color-mix(in srgb, var(--mc) 12%, var(--surface));
+}
+.ui-ico {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .text-btn.accent {
   color: var(--accent);
   font-weight: 700;
 }
-.memo-search {
-  margin-bottom: 12px;
+.memos .page-head h1 {
+  flex: 1;
 }
-.memo-list {
+.memo-search {
+  margin-bottom: 10px;
+}
+.memo-tags {
+  margin: 0 0 12px;
+}
+.memo-sec {
+  margin: 4px 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+.memo-list.grid {
+  columns: 2;
+  column-gap: 8px;
+}
+.memo-list.grid .memo-card {
+  break-inside: avoid;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.memo-list.list {
   display: grid;
   gap: 8px;
 }
+.memo-list + .memo-sec {
+  margin-top: 10px;
+}
 .memo-card {
   display: grid;
-  gap: 2px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid var(--line);
+  gap: 6px;
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: var(--mbg);
+  border: 1px solid color-mix(in srgb, var(--mc) 45%, var(--line));
   text-align: left;
-  position: relative;
+  overflow: hidden;
+}
+.memo-card.trashed {
+  padding: 12px 13px 0;
+  opacity: 0.85;
+}
+.memo-card.trashed .hist-actions {
+  margin: 0 -13px;
 }
 .memo-top {
   display: flex;
   gap: 6px;
-  padding-right: 44px;
+  align-items: baseline;
 }
 .memo-top b {
+  flex: 1;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.pin {
+  color: #ffd166;
+  font-size: 12px;
+}
+.memo-body {
+  display: grid;
+  gap: 1px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.memo-body span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pin {
-  color: #ffd166;
+.memo-list.grid .memo-body span {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.memo-card small {
-  color: var(--muted);
-  font-size: 13px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.memo-body .chk.on {
+  text-decoration: line-through;
+  opacity: 0.6;
 }
-.memo-card time {
-  position: absolute;
-  top: 13px;
-  right: 14px;
+.memo-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
   font-size: 11px;
   color: var(--dim);
 }
-.memo-edit textarea {
-  width: 100%;
-  min-height: calc(100dvh - 220px);
-  padding: 14px;
-  border-radius: var(--r);
+.memo-cc {
+  color: var(--accent);
+}
+.memo-tag {
+  color: color-mix(in srgb, var(--mc) 70%, var(--muted));
+}
+.trash-link {
+  display: block;
+  margin: 18px auto 0;
+  font-size: 13px;
+  color: var(--dim);
+}
+.fab {
+  position: fixed;
+  right: max(18px, calc(50% - 262px));
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  z-index: 9;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #04110f;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.fab svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+.empty {
+  white-space: pre-line;
+}
+
+/* メモ編集 */
+.color-dot {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mc);
+  border: 2px solid color-mix(in srgb, var(--mc) 60%, #fff);
+}
+.color-dot.c-none {
+  background: transparent;
+  border: 2px dashed var(--muted);
+}
+.color-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
   background: var(--surface);
   border: 1px solid var(--line);
+}
+.color-dot.big {
+  width: 32px;
+  height: 32px;
+}
+.color-dot.on {
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--text);
+}
+.memo-edit textarea,
+.memo-view {
+  width: 100%;
+  min-height: calc(100dvh - 300px);
+  padding: 14px;
+  border-radius: var(--r);
+  background: var(--mbg, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--mc, var(--line)) 45%, var(--line));
   outline: 0;
   color: var(--text);
   font: inherit;
@@ -1131,9 +1271,84 @@ svg {
 .memo-edit textarea:focus {
   border-color: var(--accent);
 }
-.memo-edit .text-btn {
-  display: block;
-  margin: 14px auto 0;
+.memo-view {
+  cursor: text;
+}
+.mv-title {
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  overflow-wrap: anywhere;
+}
+.mv-line {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.mv-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.mv-check button {
+  flex: none;
+  width: 34px;
+  margin-left: -6px;
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.mv-check.on button {
+  color: var(--accent);
+}
+.mv-check span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.mv-check.on span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.mv-tag {
+  color: var(--accent);
+}
+.mv-hint {
+  margin: 18px 0 0;
+  font-size: 11px;
+  color: var(--dim);
+}
+.memo-tools {
+  position: sticky;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  border: 1px solid var(--line-2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.memo-tools button {
+  flex: 1;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.memo-tools button:active {
+  background: var(--surface);
+}
+.memo-tools button.accent {
+  background: var(--accent);
+  color: #04110f;
+}
+.memo-count {
+  margin: 6px 0 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--dim);
 }
 .bottom-nav button {
   font-size: 10.5px;
