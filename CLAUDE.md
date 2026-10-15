@@ -17,8 +17,7 @@
   - `rtd.ts` 測温抵抗体 Callendar–Van Dusen（JIS C 1604 / IEC 60751、JPt100は旧JIS近似）
   - `signal.ts` 4-20mA等 ⇔ % ⇔ 物理量（リニア／開平）
   - `units.ts` 単位換算（圧力・流量・温度・長さ）
-  - `dplevel.ts` 差圧式レベル計のレンジ（ゼロ移調・封入液・ウェットレグ）
-- `src/tools/*Tool.tsx` 各ツール画面。`registry.ts` に1行足せばホームに並ぶ
+- `src/tools/*Tool.tsx` 各ツール画面（`TempTool` が測温抵抗体 `RtdTool` と熱電対 `TcTool` を切替でまとめている）。`registry.ts` に1行足せばホームに並ぶ
   - ツールは `ToolDef`（`types.ts`）：id・名前・グループ・検索キーワード・アイコン・初期値・画面・履歴用の一行要約
 - `src/store.ts` localStorage（お気に入り・最近・各ツールの入力状態・計算履歴・設定）
 - `src/screens/*` ホーム（検索＋グループ絞り込み）・ツール・履歴・設定

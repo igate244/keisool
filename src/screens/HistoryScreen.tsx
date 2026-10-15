@@ -1,4 +1,4 @@
-import { useData, saveToolState, deleteHistory, clearHistory, type HistoryEntry } from '../store';
+import { useData, saveToolState, deleteHistory, clearHistory, getData, type HistoryEntry } from '../store';
 import { toolById } from '../tools/registry';
 import { go } from '../router';
 import { copy } from '../components/ui';
@@ -24,8 +24,11 @@ export function HistoryScreen() {
     else groups.push({ label, items: [h] });
   }
   const restore = (h: HistoryEntry) => {
-    saveToolState(h.tool, h.state);
-    go(`tool/${h.tool}`);
+    const t = toolById(h.tool);
+    if (!t) return;
+    if (t.id === h.tool) saveToolState(t.id, h.state);
+    else if (t.id === 'temp') saveToolState('temp', { ...(getData().states.temp as object), kind: h.tool, [h.tool]: h.state });
+    go(`tool/${t.id}`);
   };
   return (
     <div className="screen">

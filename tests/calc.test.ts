@@ -4,7 +4,6 @@ import { tcEmf, tcTemp, tcTempFromMeasured, tcMeasuredEmf, TC_TYPES, tcRange, tc
 import { rtdResistance, rtdTemp } from '../src/calc/rtd';
 import { pctToPv, pvToPct, sigToPct, pctToSig, table } from '../src/calc/signal';
 import { convert } from '../src/calc/units';
-import { levelRange } from '../src/calc/dplevel';
 
 const near = (a: number, b: number, tol: number, msg = '') => assert.ok(Math.abs(a - b) <= tol, `${msg} ${a} ≠ ${b} (±${tol})`);
 
@@ -95,21 +94,4 @@ test('単位換算', () => {
   near(convert('flow', 'GPM', 'm3/h', 1), 0.2271247, 1e-6);
   near(convert('temp', 'C', 'F', 100), 212, 1e-9);
   near(convert('temp', 'K', 'C', 0), -273.15, 1e-9);
-});
-
-test('差圧レベル計', () => {
-  // 開放タンク、比重1.0、0〜2000mm、伝送器はタップと同じ高さ
-  let r = levelRange({ mode: 'open', sg: 1, l0: 0, l1: 2000, h: 0, sgHP: 1, d: 0, sgLP: 1 });
-  assert.deepEqual([r.lrv, r.urv, r.kind], [0, 2000, 'none']);
-  // 開放タンク、比重0.8、伝送器がタップより500mm下（導圧管は同じ液）→ ゼロサプレッション
-  r = levelRange({ mode: 'open', sg: 0.8, l0: 0, l1: 2000, h: 500, sgHP: 0.8, d: 0, sgLP: 1 });
-  near(r.lrv, 400, 1e-9);
-  near(r.urv, 2000, 1e-9);
-  assert.equal(r.kind, 'suppression');
-  // 密閉・両側ダイアフラムシール（封入液0.93）、比重1.1、タップ間3000mm、伝送器は下タップより1000mm下
-  r = levelRange({ mode: 'wet', sg: 1.1, l0: 0, l1: 3000, h: 1000, sgHP: 0.93, d: 3000, sgLP: 0.93 });
-  near(r.lrv, -2790, 1e-9);
-  near(r.urv, 510, 1e-9);
-  near(r.span, 3300, 1e-9);
-  assert.equal(r.kind, 'elevation');
 });
