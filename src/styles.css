@@ -1354,7 +1354,10 @@ svg {
   font-size: 10.5px;
 }
 
-/* 工事件名（親）と作業（子） */
+/* 工事件名（親）と手順（子）＝指示書 */
+.task-list {
+  gap: 10px;
+}
 .project {
   border-radius: 14px;
   background: var(--surface);
@@ -1368,56 +1371,108 @@ svg {
   background: transparent;
   border-style: dashed;
 }
+.project.editing {
+  border-color: var(--accent);
+}
 .project-head {
   display: flex;
   align-items: center;
+  gap: 6px;
   position: relative;
-  padding-bottom: 2px;
-}
-.project-toggle {
-  flex: none;
-  width: 44px;
-  height: 56px;
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-}
-.project-toggle svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  transition: transform 0.15s;
-}
-.project-toggle svg.open {
-  transform: rotate(90deg);
+  padding: 4px 8px 6px 4px;
 }
 .project-name {
   flex: 1;
-  display: grid;
-  padding: 10px 14px 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 4px;
   text-align: left;
+}
+.chev {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.15s;
+}
+.chev.open {
+  transform: rotate(90deg);
+}
+.pn-text {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   min-width: 0;
 }
-.project-name b {
+.pn-text b {
   font-size: 16px;
   overflow-wrap: anywhere;
 }
-.project-name small {
+.pn-text small {
+  flex: none;
   font-size: 12px;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-.project.all-done .project-name small {
+.project.all-done .pn-text small {
   color: var(--accent);
+}
+.project-name-input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  margin: 4px 0 4px 4px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  outline: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+.icon-mini {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--dim);
+}
+.icon-mini svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pill {
+  flex: none;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pill.accent {
+  background: var(--accent);
+  color: #04110f;
 }
 .progress {
   position: absolute;
-  left: 44px;
+  left: 30px;
   right: 14px;
-  bottom: 0;
-  height: 3px;
+  bottom: 2px;
+  height: 2px;
   border-radius: 2px;
   background: var(--line);
   overflow: hidden;
@@ -1428,52 +1483,148 @@ svg {
   background: var(--accent);
   transition: width 0.2s;
 }
-.project-body {
-  display: grid;
-  gap: 6px;
-  padding: 8px 8px 8px 20px;
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0 4px;
+  border-top: 1px solid var(--line);
 }
-.project.loose .project-body {
-  padding-left: 8px;
+.step {
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
 }
-.project-body .task {
+.step:last-child {
+  border-bottom: 0;
+}
+.step-main {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px 6px 10px;
+  text-align: left;
+}
+.step-main:active {
   background: var(--surface-2);
 }
-.project-edit {
+.step-no {
+  flex: none;
+  width: 24px;
+  height: 24px;
   display: grid;
-  gap: 8px;
-  padding: 10px;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-.project-edit input,
-.add-sub input {
-  height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--line-2);
-  outline: 0;
-  font-size: 16px;
+.step.done .step-no {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #04110f;
+}
+.step-text {
+  flex: 1;
   min-width: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
 }
-.add-sub {
+.step.done .step-text {
+  color: var(--dim);
+  text-decoration: line-through;
+}
+.step-who {
+  flex: none;
+  font-size: 11px;
+  color: var(--dim);
+}
+.step.add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px 2px;
+}
+.step.add .step-no {
+  border-style: dashed;
+  color: var(--dim);
+}
+.step.add form {
+  flex: 1;
   display: flex;
   gap: 6px;
 }
-.add-sub input {
+.step.add input {
   flex: 1;
+  min-width: 0;
+  height: 38px;
+  border: 0;
+  outline: 0;
   background: transparent;
-  border-style: dashed;
+  font-size: 15px;
 }
-.add-sub input:focus {
-  border-style: solid;
-  border-color: var(--accent);
-}
-.add-sub button {
-  padding: 0 14px;
-  border-radius: 10px;
+.step.add button {
+  padding: 0 12px;
+  border-radius: 9px;
   background: var(--accent);
   color: #04110f;
   font-weight: 700;
+  font-size: 13px;
+}
+.step.editing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+}
+.step.editing input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  outline: 0;
+  font-size: 15px;
+}
+.step.editing input:focus {
+  border-color: var(--accent);
+}
+.sq {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  font-size: 12px;
+  color: var(--muted);
+}
+.sq:disabled {
+  opacity: 0.3;
+}
+.project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--line);
+}
+.project-actions button {
+  flex: 1 1 auto;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.project-actions button:disabled {
+  opacity: 0.35;
 }
 
 /* 日付の切替 */

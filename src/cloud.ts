@@ -26,6 +26,7 @@ export type Task = {
   text: string;
   kind?: 'project' | 'task';
   parent?: string;
+  order?: number; // 並び順（小さいほど上）。無いときは createdAt
   date?: string; // 予定日 YYYY-MM-DD（工事件名と件名なしの作業に付く。工事件名の中の作業は親に従う）
   done: boolean;
   createdBy: string;
@@ -240,6 +241,24 @@ export async function addProject(team: string, text: string, date: string) {
   await add(team, text, { kind: 'project', date });
 }
 
+export const orderOf = (t: Task) => t.order ?? t.createdAt;
+export const byOrder = (a: Task, b: Task) => orderOf(a) - orderOf(b);
+
+/** 並び替え：list の i 番目と j 番目を入れ替える（並び順の値を交換） */
+export async function swapOrder(team: string, list: Task[], i: number, j: number) {
+  if (j < 0 || j >= list.length) return;
+  const { fs, fsMod } = await sdk();
+  const a = list[i];
+  const b = list[j];
+  let oa = orderOf(a);
+  let ob = orderOf(b);
+  if (oa === ob) ob = oa + (j > i ? 1 : -1);
+  const batch = fsMod.writeBatch(fs);
+  batch.update(fsMod.doc(fs, TEAMS, team, 'tasks', a.id), { order: ob });
+  batch.update(fsMod.doc(fs, TEAMS, team, 'tasks', b.id), { order: oa });
+  batch.commit().catch(() => {});
+}
+
 /** 予定日を変える（明日へ送る など） */
 export async function moveTask(team: string, id: string, date: string) {
   const { fs, fsMod } = await sdk();
@@ -261,7 +280,8 @@ async function add(team: string, text: string, extra: object) {
   const { fs, fsMod } = await sdk();
   const u = me();
   // オフラインでも即反映（送信は電波が戻ったら自動）
-  fsMod.addDoc(tasksCol(fs, fsMod, team), { text: t, ...extra, done: false, createdBy: u.uid, createdByName: u.name, createdAt: Date.now() }).catch(() => {});
+  const now = Date.now();
+  fsMod.addDoc(tasksCol(fs, fsMod, team), { text: t, ...extra, done: false, createdBy: u.uid, createdByName: u.name, createdAt: now, order: now }).catch(() => {});
 }
 
 export async function setDone(team: string, task: Task, done: boolean) {

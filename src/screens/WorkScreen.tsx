@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth, signIn, signOut, createTeam, joinTeam, leaveTeam, renameTeam, watchTeam, watchTasks, addTask, addProject, moveTask, dayKey, taskDate, setDone, editTask, deleteTask, clearTasks, getTeam, type Task, type Team } from '../cloud';
+import { useAuth, signIn, signOut, createTeam, joinTeam, leaveTeam, renameTeam, watchTeam, watchTasks, addTask, addProject, moveTask, dayKey, taskDate, byOrder, swapOrder, setDone, editTask, deleteTask, clearTasks, getTeam, type Task, type Team } from '../cloud';
 import { useData, setTeamId } from '../store';
 import { go } from '../router';
 import { toast } from '../components/ui';
@@ -156,9 +156,9 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
 
   const today = dayKey();
   const all = tasks ?? [];
-  const projects = all.filter((t) => t.kind === 'project');
+  const projects = all.filter((t) => t.kind === 'project').sort(byOrder);
   const projectIds = new Set(projects.map((p) => p.id));
-  const childrenOf = (id: string) => all.filter((t) => t.kind !== 'project' && t.parent === id);
+  const childrenOf = (id: string) => all.filter((t) => t.kind !== 'project' && t.parent === id).sort(byOrder);
   const isLoose = (t: Task) => t.kind !== 'project' && !(t.parent && projectIds.has(t.parent));
   const finished = (t: Task) => {
     if (t.kind !== 'project') return t.done;
@@ -168,7 +168,7 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
   // その日の分＋（今日を見ているときは）前の日から終わっていない分を繰り越して表示
   const visible = (t: Task) => taskDate(t) === day || (day === today && taskDate(t) < today && !finished(t));
   const shownProjects = projects.filter(visible);
-  const loose = all.filter((t) => isLoose(t) && visible(t));
+  const loose = all.filter((t) => isLoose(t) && visible(t)).sort(byOrder);
   const shownTasks = [...shownProjects.flatMap((p) => childrenOf(p.id)), ...loose];
   const doneTasks = shownTasks.filter((t) => t.done);
   const finishedProjects = shownProjects.filter(finished);
@@ -231,8 +231,17 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
       {tasks && (
         <section className="task-list">
           {everything.length === 0 && <p className="empty">{all.length === 0 ? 'まず工事件名を追加して、その中に作業を入れてね' : `${relLabel(day)}の予定はまだなし`}</p>}
-          {shownProjects.map((p) => (
-            <ProjectCard key={p.id} p={p} items={childrenOf(p.id)} teamId={teamId} day={day} />
+          {shownProjects.map((p, i) => (
+            <ProjectCard
+              key={p.id}
+              p={p}
+              items={childrenOf(p.id)}
+              teamId={teamId}
+              day={day}
+              move={(dir) => swapOrder(teamId, shownProjects, i, i + dir)}
+              canUp={i > 0}
+              canDown={i < shownProjects.length - 1}
+            />
           ))}
           {loose.length > 0 && <ProjectCard items={loose} teamId={teamId} day={day} />}
         </section>
@@ -264,162 +273,179 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
   );
 }
 
-/** 工事件名（親）とその作業（子）。p がないときは件名なしの「その他」 */
-function ProjectCard({ p, items, teamId, day }: { p?: Task; items: Task[]; teamId: string; day: string }) {
+/** 工事件名（親）とその作業（子）＝指示書。p がないときは件名なしの作業 */
+function ProjectCard({
+  p,
+  items,
+  teamId,
+  day,
+  move,
+  canUp,
+  canDown,
+}: {
+  p?: Task;
+  items: Task[];
+  teamId: string;
+  day: string;
+  move?: (dir: -1 | 1) => void;
+  canUp?: boolean;
+  canDown?: boolean;
+}) {
   const [open, setOpen] = useState(true);
+  const [edit, setEdit] = useState(false);
   const [adding, setAdding] = useState('');
-  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(p?.text ?? '');
-  const todo = items.filter((t) => !t.done);
-  const done = items.filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
-  const allDone = items.length > 0 && todo.length === 0;
+  useEffect(() => setName(p?.text ?? ''), [p?.text]);
+  const doneCount = items.filter((t) => t.done).length;
+  const allDone = items.length > 0 && doneCount === items.length;
   const carried = p && taskDate(p) < day;
   const add = () => {
     if (!adding.trim()) return;
     addTask(teamId, adding, { parent: p?.id, date: day });
     setAdding('');
   };
+  const finishEdit = () => {
+    if (p && name.trim() && name.trim() !== p.text) editTask(teamId, p.id, name);
+    setEdit(false);
+  };
 
   return (
-    <div className={`project ${allDone ? 'all-done' : ''} ${p ? '' : 'loose'}`}>
-      {editing && p ? (
-        <div className="project-edit">
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (name.trim()) editTask(teamId, p.id, name);
-                setEditing(false);
-              }
-            }}
-          />
-          <div className="task-edit-actions">
-            <button
-              onClick={() => {
-                if (name.trim()) editTask(teamId, p.id, name);
-                setEditing(false);
-              }}
-            >
-              保存
-            </button>
-            <button
-              onClick={() => {
-                moveTask(teamId, p.id, shiftDay(day, 1));
-                setEditing(false);
-                toast(`「${p.text}」を${relLabel(shiftDay(day, 1))}へ送った`);
-              }}
-            >
-              翌日へ
-            </button>
-            <button
-              className="danger"
-              onClick={() => {
-                if (window.confirm(`「${p.text}」と中の作業${items.length}件を消す？`)) clearTasks(teamId, [p, ...items]);
-              }}
-            >
-              削除
-            </button>
-            <button onClick={() => (setName(p.text), setEditing(false))}>やめる</button>
-          </div>
-        </div>
-      ) : (
-        <div className="project-head">
-          <button className="project-toggle" onClick={() => setOpen((v) => !v)} aria-label={open ? 'たたむ' : 'ひらく'}>
-            <svg viewBox="0 0 24 24" className={open ? 'open' : ''}>
+    <div className={`project ${allDone ? 'all-done' : ''} ${p ? '' : 'loose'} ${edit ? 'editing' : ''}`}>
+      <div className="project-head">
+        {edit && p ? (
+          <input className="project-name-input" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && finishEdit()} />
+        ) : (
+          <button className="project-name" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            <svg viewBox="0 0 24 24" className={`chev ${open ? 'open' : ''}`}>
               <path d="M9 6l6 6-6 6" />
             </svg>
-          </button>
-          <button className="project-name" onClick={() => (p ? (setName(p.text), setEditing(true)) : setOpen((v) => !v))}>
-            <b>{p ? p.text : '件名なし'}</b>
-            <small>
-              {items.length > 0 ? `${items.length - todo.length}/${items.length} 完了` : '作業なし'}
-              {carried ? `・${relLabel(taskDate(p!))}から` : ''}
-            </small>
-          </button>
-          {items.length > 0 && (
-            <span className="progress" aria-hidden>
-              <i style={{ width: `${((items.length - todo.length) / items.length) * 100}%` }} />
+            <span className="pn-text">
+              <b>{p ? p.text : '件名なし'}</b>
+              <small>
+                {items.length > 0 ? (allDone ? '全部完了' : `${doneCount}/${items.length}`) : '手順なし'}
+                {carried ? `・${relLabel(taskDate(p!))}から` : ''}
+              </small>
             </span>
-          )}
-        </div>
-      )}
+          </button>
+        )}
+        {edit ? (
+          <button className="pill accent" onClick={finishEdit}>
+            完了
+          </button>
+        ) : (
+          <button className="icon-mini" onClick={() => (setOpen(true), setEdit(true))} aria-label="編集・並べ替え">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />
+            </svg>
+          </button>
+        )}
+        {items.length > 0 && !edit && (
+          <span className="progress" aria-hidden>
+            <i style={{ width: `${(doneCount / items.length) * 100}%` }} />
+          </span>
+        )}
+      </div>
+
       {open && (
-        <div className="project-body">
-          {todo.map((t) => (
-            <TaskRow key={t.id} t={t} teamId={teamId} />
-          ))}
-          {done.map((t) => (
-            <TaskRow key={t.id} t={t} teamId={teamId} />
+        <ol className="steps">
+          {items.map((t, i) => (
+            <StepRow
+              key={t.id}
+              t={t}
+              n={i + 1}
+              teamId={teamId}
+              edit={edit}
+              onUp={i > 0 ? () => swapOrder(teamId, items, i, i - 1) : undefined}
+              onDown={i < items.length - 1 ? () => swapOrder(teamId, items, i, i + 1) : undefined}
+            />
           ))}
           {p && (
-            <form
-              className="add-sub"
-              onSubmit={(e) => {
-                e.preventDefault();
-                add();
-              }}
-            >
-              <input value={adding} onChange={(e) => setAdding(e.target.value)} placeholder="＋ 作業を追加" enterKeyHint="done" />
-              {adding.trim() && <button type="submit">追加</button>}
-            </form>
+            <li className="step add">
+              <span className="step-no">{items.length + 1}</span>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  add();
+                }}
+              >
+                <input value={adding} onChange={(e) => setAdding(e.target.value)} placeholder="手順を追加" enterKeyHint="done" />
+                {adding.trim() && <button type="submit">追加</button>}
+              </form>
+            </li>
           )}
+        </ol>
+      )}
+
+      {edit && p && (
+        <div className="project-actions">
+          {move && (
+            <>
+              <button disabled={!canUp} onClick={() => move(-1)}>
+                ▲ 件名を上へ
+              </button>
+              <button disabled={!canDown} onClick={() => move(1)}>
+                ▼ 件名を下へ
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => {
+              moveTask(teamId, p.id, shiftDay(day, 1));
+              toast(`「${p.text}」を${relLabel(shiftDay(day, 1))}へ送った`);
+            }}
+          >
+            翌日へ
+          </button>
+          <button
+            className="danger"
+            onClick={() => {
+              if (window.confirm(`「${p.text}」と手順${items.length}件を消す？`)) clearTasks(teamId, [p, ...items]);
+            }}
+          >
+            削除
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-function TaskRow({ t, teamId }: { t: Task; teamId: string }) {
-  const [editing, setEditing] = useState(false);
+/** 手順1行。普段はタップでチェック、編集中は文字を直す・▲▼で並べ替え・×で削除 */
+function StepRow({ t, n, teamId, edit, onUp, onDown }: { t: Task; n: number; teamId: string; edit: boolean; onUp?: () => void; onDown?: () => void }) {
   const [val, setVal] = useState(t.text);
-  const old = !t.parent && taskDate(t) < dayKey();
-  if (editing) {
+  useEffect(() => setVal(t.text), [t.text]);
+  const save = () => {
+    if (val.trim() && val.trim() !== t.text) editTask(teamId, t.id, val);
+  };
+  if (edit) {
     return (
-      <div className="task editing">
-        <input
-          autoFocus
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              if (val.trim()) editTask(teamId, t.id, val);
-              setEditing(false);
-            }
-          }}
-        />
-        <div className="task-edit-actions">
-          <button
-            onClick={() => {
-              if (val.trim()) editTask(teamId, t.id, val);
-              setEditing(false);
-            }}
-          >
-            保存
-          </button>
-          <button className="danger" onClick={() => deleteTask(teamId, t.id)}>
-            削除
-          </button>
-          <button onClick={() => (setVal(t.text), setEditing(false))}>やめる</button>
-        </div>
-      </div>
+      <li className="step editing">
+        <span className="step-no">{n}</span>
+        <input value={val} onChange={(e) => setVal(e.target.value)} onBlur={save} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />
+        <button className="sq" disabled={!onUp} onClick={onUp} aria-label="上へ">
+          ▲
+        </button>
+        <button className="sq" disabled={!onDown} onClick={onDown} aria-label="下へ">
+          ▼
+        </button>
+        <button className="sq danger" onClick={() => deleteTask(teamId, t.id)} aria-label="削除">
+          ×
+        </button>
+      </li>
     );
   }
   return (
-    <div className={`task ${t.done ? 'done' : ''}`}>
-      <button className="check" onClick={() => setDone(teamId, t, !t.done)} aria-label={t.done ? '未完了に戻す' : '完了にする'}>
-        <svg viewBox="0 0 24 24">
-          <path d="M5 12.5l4.5 4.5L19 7.5" />
-        </svg>
+    <li className={`step ${t.done ? 'done' : ''}`}>
+      <button className="step-main" onClick={() => setDone(teamId, t, !t.done)} aria-pressed={t.done}>
+        <span className="step-no">{n}</span>
+        <span className="step-text">{t.text}</span>
+        {t.done && (
+          <small className="step-who">
+            {t.doneByName} {hm(t.doneAt)}
+          </small>
+        )}
       </button>
-      <button className="task-text" onClick={() => (setVal(t.text), setEditing(true))}>
-        <span>{t.text}</span>
-        <small>
-          {t.done ? `✓ ${t.doneByName ?? ''} ${hm(t.doneAt)}` : `${t.createdByName}${old ? `・${relLabel(taskDate(t))}から` : ''}`}
-        </small>
-      </button>
-    </div>
+    </li>
   );
 }
 
