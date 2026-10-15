@@ -68,6 +68,9 @@ svg {
 .g-convert {
   --g: var(--g-convert);
 }
+.g-control {
+  --g: var(--g-process);
+}
 
 .app {
   min-height: 100dvh;
@@ -1679,4 +1682,203 @@ svg {
   color: var(--accent);
   font-size: 12.5px;
   font-weight: 700;
+}
+
+/* ---------- PIDシミュレーター ---------- */
+.pid-chart svg {
+  width: 100%;
+  height: auto;
+}
+.pc-grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.pc-ax {
+  fill: var(--dim);
+  font-size: 10px;
+  font-family: var(--mono);
+}
+.pc-ax.mv {
+  fill: color-mix(in srgb, var(--g-temp) 70%, var(--dim));
+}
+.pc-pv,
+.pc-sp,
+.pc-mv,
+.pc-ghost {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.pc-pv {
+  stroke: var(--g);
+  stroke-width: 2.4;
+}
+.pc-sp {
+  stroke: var(--text);
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+  opacity: 0.8;
+}
+.pc-mv {
+  stroke: var(--g-temp);
+  stroke-width: 1.3;
+  opacity: 0.75;
+}
+.pc-ghost {
+  stroke: var(--muted);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 3;
+}
+.pc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pc-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 0;
+  margin-right: 5px;
+  vertical-align: middle;
+  border-top: 2.5px solid;
+}
+.pc-legend .l-pv::before {
+  border-color: var(--g);
+}
+.pc-legend .l-sp::before {
+  border-top-style: dashed !important;
+  border-color: var(--text);
+}
+.pc-legend .l-mv::before {
+  border-color: var(--g-temp);
+}
+.pc-legend .l-ghost::before {
+  border-top-style: dotted !important;
+  border-color: var(--muted);
+}
+.pid-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pid-metrics > span {
+  grid-column: 1 / -1;
+}
+.pid-metrics div {
+  display: grid;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.pid-metrics small {
+  font-size: 11px;
+}
+.pid-metrics b {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 15px;
+}
+.pid-metrics .bad b {
+  color: var(--warn);
+}
+.pid-slider {
+  display: grid;
+  gap: 2px;
+}
+.ps-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ps-badge {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--g) 18%, transparent);
+  color: var(--g);
+  font-weight: 800;
+  font-size: 13px;
+}
+.ps-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ps-head b {
+  font-size: 17px;
+}
+.pid-slider input[type='range'] {
+  width: 100%;
+  height: 32px;
+  accent-color: var(--g);
+}
+.ps-foot {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--dim);
+  margin-top: -4px;
+}
+.ps-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pid-nums .sign {
+  display: none;
+}
+.pid-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pid-actions button {
+  flex: 1 1 auto;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.pid-tips,
+.pid-guide {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13.5px;
+}
+.pid-guide {
+  color: var(--muted);
+}
+.pid-guide b {
+  color: var(--text);
+}
+.pid-sticky {
+  position: sticky;
+  top: calc(env(safe-area-inset-top) + 66px);
+  z-index: 4;
+  gap: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+.pid-sticky .pid-chart svg {
+  max-height: 34vh;
+}
+.pid-sticky .pid-metrics div {
+  padding: 4px 8px;
+  line-height: 1.3;
+}
+.pid-sticky .pid-metrics b {
+  font-size: 13.5px;
 }

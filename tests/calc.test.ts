@@ -95,3 +95,35 @@ test('単位換算', () => {
   near(convert('temp', 'C', 'F', 100), 212, 1e-9);
   near(convert('temp', 'K', 'C', 0), -273.15, 1e-9);
 });
+
+import { simulate, simcTuning } from '../src/calc/pid';
+
+test('PID：P動作だけだと残留偏差 = ΔSP/(1+K·Kc)', () => {
+  const r = simulate({ k: 1, t: 10, l: 1 }, { pb: 50, ti: 0, td: 0, pvDerivative: true }, { sp0: 40, sp1: 60, tStep: 5, dist: 0, tDist: 0, duration: 200 });
+  near(r.metrics.offset, 20 / (1 + 2), 0.05);
+});
+
+test('PID：積分を入れると SP に戻る・外乱も戻す', () => {
+  const p = { k: 1, t: 10, l: 2 };
+  const c = simcTuning(p, 'PI');
+  const r = simulate(p, c, { sp0: 40, sp1: 60, tStep: 5, dist: 0, tDist: 0, duration: 200 });
+  near(r.metrics.offset, 0, 0.05);
+  assert.ok(r.metrics.overshoot < 15, `overshoot ${r.metrics.overshoot}`);
+  assert.ok(Number.isFinite(r.metrics.settlingTime));
+  const d = simulate(p, c, { sp0: 50, sp1: 50, tStep: 5, dist: -10, tDist: 10, duration: 300 });
+  near(d.pv[d.pv.length - 1], 50, 0.1);
+});
+
+test('PID：ゲインを上げすぎると振動する', () => {
+  const r = simulate({ k: 1, t: 10, l: 3 }, { pb: 10, ti: 5, td: 0, pvDerivative: true }, { sp0: 40, sp1: 60, tStep: 5, dist: 0, tDist: 0, duration: 200 });
+  assert.ok(r.metrics.oscillating || r.metrics.overshoot > 50);
+});
+
+test('PID：微分が効く（PV微分で振動が減る）', () => {
+  const p = { k: 1, t: 20, l: 4 };
+  const base = { pb: 20, ti: 20, td: 0, pvDerivative: true };
+  const sc = { sp0: 40, sp1: 60, tStep: 5, dist: 0, tDist: 0, duration: 300 };
+  const a = simulate(p, base, sc).metrics.overshoot;
+  const b = simulate(p, { ...base, td: 2 }, sc).metrics.overshoot;
+  assert.ok(b < a, `${b} < ${a}`);
+});

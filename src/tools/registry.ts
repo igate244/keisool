@@ -3,8 +3,9 @@ import type { ToolDef } from './types';
 import { signalTool } from './SignalTool';
 import { tempTool } from './TempTool';
 import { unitTool } from './UnitTool';
+import { pidTool } from './PidTool';
 
-export const TOOLS: ToolDef[] = [signalTool, tempTool, unitTool];
+export const TOOLS: ToolDef[] = [signalTool, tempTool, pidTool, unitTool];
 
 // 統合・廃止したツールの旧ID（履歴・最近・前回のツールから開いたとき用）
 const ALIASES: Record<string, string> = { rtd: 'temp', tc: 'temp' };

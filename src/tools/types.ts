@@ -1,10 +1,11 @@
 import type { ComponentType } from 'react';
 
-export type GroupId = 'signal' | 'temp' | 'convert';
+export type GroupId = 'signal' | 'temp' | 'control' | 'convert';
 
 export const GROUPS: { id: GroupId; label: string }[] = [
   { id: 'signal', label: '信号' },
   { id: 'temp', label: '温度' },
+  { id: 'control', label: '制御' },
   { id: 'convert', label: '換算' },
 ];
 

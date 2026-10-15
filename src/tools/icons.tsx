@@ -94,3 +94,10 @@ export const IconMemo = () => (
     <path d="M9 10h6M9 14h6M9 18h3" />
   </svg>
 );
+
+export const IconPid = () => (
+  <svg viewBox="0 0 24 24" {...P}>
+    <path d="M3 18h3c2 0 2-10 5-10s2.5 6 4.5 6S17 11 19 11h2" />
+    <path d="M3 11h18" strokeDasharray="2 2.5" opacity="0.6" />
+  </svg>
+);
