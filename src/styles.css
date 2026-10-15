@@ -1138,3 +1138,179 @@ svg {
 .bottom-nav button {
   font-size: 10.5px;
 }
+
+/* 工事件名（親）と作業（子） */
+.project {
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.project.all-done {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+.project.loose {
+  background: transparent;
+  border-style: dashed;
+}
+.project-head {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding-bottom: 2px;
+}
+.project-toggle {
+  flex: none;
+  width: 44px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.project-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: transform 0.15s;
+}
+.project-toggle svg.open {
+  transform: rotate(90deg);
+}
+.project-name {
+  flex: 1;
+  display: grid;
+  padding: 10px 14px 10px 0;
+  text-align: left;
+  min-width: 0;
+}
+.project-name b {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.project-name small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.project.all-done .project-name small {
+  color: var(--accent);
+}
+.progress {
+  position: absolute;
+  left: 44px;
+  right: 14px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+.project-body {
+  display: grid;
+  gap: 6px;
+  padding: 8px 8px 8px 20px;
+}
+.project.loose .project-body {
+  padding-left: 8px;
+}
+.project-body .task {
+  background: var(--surface-2);
+}
+.project-edit {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+.project-edit input,
+.add-sub input {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  outline: 0;
+  font-size: 16px;
+  min-width: 0;
+}
+.add-sub {
+  display: flex;
+  gap: 6px;
+}
+.add-sub input {
+  flex: 1;
+  background: transparent;
+  border-style: dashed;
+}
+.add-sub input:focus {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.add-sub button {
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #04110f;
+  font-weight: 700;
+}
+
+/* 日付の切替 */
+.day-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.day-nav button {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+}
+.day-nav button:active {
+  border-color: var(--accent);
+}
+.day-nav svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.day-label {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  line-height: 1.25;
+}
+.day-label b {
+  font-size: 18px;
+}
+.day-label small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.back-today {
+  display: block;
+  margin: 8px auto 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 700;
+}

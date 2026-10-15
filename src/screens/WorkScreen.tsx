@@ -1,15 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuth, signIn, signOut, createTeam, joinTeam, leaveTeam, renameTeam, watchTeam, watchTasks, addTask, setDone, editTask, deleteTask, clearTasks, getTeam, type Task, type Team } from '../cloud';
+import { useAuth, signIn, signOut, createTeam, joinTeam, leaveTeam, renameTeam, watchTeam, watchTasks, addTask, addProject, moveTask, dayKey, taskDate, setDone, editTask, deleteTask, clearTasks, getTeam, type Task, type Team } from '../cloud';
 import { useData, setTeamId } from '../store';
 import { go } from '../router';
 import { toast } from '../components/ui';
 
-const today = () => {
-  const d = new Date();
+const parseDay = (k: string) => {
+  const [y, m, d] = k.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+const shiftDay = (k: string, n: number) => dayKey(parseDay(k), n);
+const dayLabel = (k: string) => {
+  const d = parseDay(k);
   return `${d.getMonth() + 1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
 };
+const relLabel = (k: string) => {
+  const diff = Math.round((parseDay(k).getTime() - parseDay(dayKey()).getTime()) / 864e5);
+  return ({ [-2]: 'おととい', [-1]: '昨日', 0: '今日', 1: '明日', 2: 'あさって' } as Record<number, string>)[diff] ?? (diff > 0 ? `${diff}日後` : `${-diff}日前`);
+};
 const hm = (t?: number) => (t ? new Date(t).toTimeString().slice(0, 5) : '');
-const dayOf = (t: number) => new Date(t).toDateString();
 const inviteUrl = (id: string) => `${location.origin}${location.pathname}#/join/${id}`;
 
 export function WorkScreen() {
@@ -19,9 +27,7 @@ export function WorkScreen() {
   return (
     <div className="screen work">
       <header className="page-head">
-        <h1>
-          今日のワーク<small className="head-date">{today()}</small>
-        </h1>
+        <h1>ワーク</h1>
       </header>
       {auth.status === 'loading' && <p className="empty">読み込み中…</p>}
       {auth.status === 'error' && <p className="empty">{auth.message}</p>}
@@ -131,6 +137,7 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
   const [err, setErr] = useState('');
   const [text, setText] = useState('');
   const [showTeam, setShowTeam] = useState(false);
+  const [day, setDay] = useState(dayKey());
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => watchTeam(teamId, (t, e) => (e ? setErr(e) : setTeam(t))), [teamId]);
@@ -147,11 +154,28 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
     );
   }
 
-  const todo = (tasks ?? []).filter((t) => !t.done);
-  const done = (tasks ?? []).filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
+  const today = dayKey();
+  const all = tasks ?? [];
+  const projects = all.filter((t) => t.kind === 'project');
+  const projectIds = new Set(projects.map((p) => p.id));
+  const childrenOf = (id: string) => all.filter((t) => t.kind !== 'project' && t.parent === id);
+  const isLoose = (t: Task) => t.kind !== 'project' && !(t.parent && projectIds.has(t.parent));
+  const finished = (t: Task) => {
+    if (t.kind !== 'project') return t.done;
+    const c = childrenOf(t.id);
+    return c.length > 0 && c.every((x) => x.done);
+  };
+  // その日の分＋（今日を見ているときは）前の日から終わっていない分を繰り越して表示
+  const visible = (t: Task) => taskDate(t) === day || (day === today && taskDate(t) < today && !finished(t));
+  const shownProjects = projects.filter(visible);
+  const loose = all.filter((t) => isLoose(t) && visible(t));
+  const shownTasks = [...shownProjects.flatMap((p) => childrenOf(p.id)), ...loose];
+  const doneTasks = shownTasks.filter((t) => t.done);
+  const finishedProjects = shownProjects.filter(finished);
+  const everything = [...shownProjects, ...shownTasks];
   const submit = () => {
     if (!text.trim()) return;
-    addTask(teamId, text);
+    addProject(teamId, text, day);
     setText('');
     inputRef.current?.focus();
   };
@@ -166,6 +190,28 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
       </button>
       {showTeam && team && <TeamPanel team={team} uid={uid} />}
 
+      <div className="day-nav">
+        <button onClick={() => setDay(shiftDay(day, -1))} aria-label="前の日">
+          <svg viewBox="0 0 24 24">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <div className="day-label">
+          <b>{relLabel(day)}</b>
+          <small>{dayLabel(day)}</small>
+        </div>
+        <button onClick={() => setDay(shiftDay(day, 1))} aria-label="次の日">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+      {day !== today && (
+        <button className="back-today" onClick={() => setDay(today)}>
+          今日に戻る
+        </button>
+      )}
+
       <form
         className="add-task"
         onSubmit={(e) => {
@@ -173,8 +219,8 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
           submit();
         }}
       >
-        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder="タスクを追加" enterKeyHint="done" />
-        <button type="submit" disabled={!text.trim()} aria-label="追加">
+        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} placeholder={day === today ? '工事件名を追加' : `${relLabel(day)}の工事件名を追加`} enterKeyHint="done" />
+        <button type="submit" disabled={!text.trim()} aria-label="工事件名を追加">
           ＋
         </button>
       </form>
@@ -184,29 +230,21 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
 
       {tasks && (
         <section className="task-list">
-          {todo.length === 0 && done.length === 0 && <p className="empty">まだタスクなし。上から追加してね</p>}
-          {todo.map((t) => (
-            <TaskRow key={t.id} t={t} teamId={teamId} />
+          {everything.length === 0 && <p className="empty">{all.length === 0 ? 'まず工事件名を追加して、その中に作業を入れてね' : `${relLabel(day)}の予定はまだなし`}</p>}
+          {shownProjects.map((p) => (
+            <ProjectCard key={p.id} p={p} items={childrenOf(p.id)} teamId={teamId} day={day} />
           ))}
-          {done.length > 0 && (
-            <>
-              <h2 className="done-head">
-                完了 {done.length}
-              </h2>
-              {done.map((t) => (
-                <TaskRow key={t.id} t={t} teamId={teamId} />
-              ))}
-            </>
-          )}
+          {loose.length > 0 && <ProjectCard items={loose} teamId={teamId} day={day} />}
         </section>
       )}
 
-      {tasks && tasks.length > 0 && (
+      {tasks && everything.length > 0 && (
         <div className="clear-row">
           <button
-            disabled={done.length === 0}
+            disabled={doneTasks.length === 0}
             onClick={() => {
-              if (window.confirm(`完了した${done.length}件を消す？（みんなの画面からも消える）`)) clearTasks(teamId, done);
+              const extra = finishedProjects.length ? `と、作業が全部終わった工事件名${finishedProjects.length}件` : '';
+              if (window.confirm(`完了した作業${doneTasks.length}件${extra}を消す？（みんなの画面からも消える）`)) clearTasks(teamId, [...doneTasks, ...finishedProjects]);
             }}
           >
             完了を消す
@@ -214,7 +252,7 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
           <button
             className="danger"
             onClick={() => {
-              if (window.confirm(`タスクを全部（${tasks.length}件）消す？（みんなの画面からも消える）`)) clearTasks(teamId, tasks);
+              if (window.confirm(`${relLabel(day)}の工事件名・作業を全部（${everything.length}件）消す？（みんなの画面からも消える）`)) clearTasks(teamId, everything);
             }}
           >
             全部クリア
@@ -226,10 +264,117 @@ function TeamView({ teamId, uid }: { teamId: string; uid: string }) {
   );
 }
 
+/** 工事件名（親）とその作業（子）。p がないときは件名なしの「その他」 */
+function ProjectCard({ p, items, teamId, day }: { p?: Task; items: Task[]; teamId: string; day: string }) {
+  const [open, setOpen] = useState(true);
+  const [adding, setAdding] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(p?.text ?? '');
+  const todo = items.filter((t) => !t.done);
+  const done = items.filter((t) => t.done).sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
+  const allDone = items.length > 0 && todo.length === 0;
+  const carried = p && taskDate(p) < day;
+  const add = () => {
+    if (!adding.trim()) return;
+    addTask(teamId, adding, { parent: p?.id, date: day });
+    setAdding('');
+  };
+
+  return (
+    <div className={`project ${allDone ? 'all-done' : ''} ${p ? '' : 'loose'}`}>
+      {editing && p ? (
+        <div className="project-edit">
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (name.trim()) editTask(teamId, p.id, name);
+                setEditing(false);
+              }
+            }}
+          />
+          <div className="task-edit-actions">
+            <button
+              onClick={() => {
+                if (name.trim()) editTask(teamId, p.id, name);
+                setEditing(false);
+              }}
+            >
+              保存
+            </button>
+            <button
+              onClick={() => {
+                moveTask(teamId, p.id, shiftDay(day, 1));
+                setEditing(false);
+                toast(`「${p.text}」を${relLabel(shiftDay(day, 1))}へ送った`);
+              }}
+            >
+              翌日へ
+            </button>
+            <button
+              className="danger"
+              onClick={() => {
+                if (window.confirm(`「${p.text}」と中の作業${items.length}件を消す？`)) clearTasks(teamId, [p, ...items]);
+              }}
+            >
+              削除
+            </button>
+            <button onClick={() => (setName(p.text), setEditing(false))}>やめる</button>
+          </div>
+        </div>
+      ) : (
+        <div className="project-head">
+          <button className="project-toggle" onClick={() => setOpen((v) => !v)} aria-label={open ? 'たたむ' : 'ひらく'}>
+            <svg viewBox="0 0 24 24" className={open ? 'open' : ''}>
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </button>
+          <button className="project-name" onClick={() => (p ? (setName(p.text), setEditing(true)) : setOpen((v) => !v))}>
+            <b>{p ? p.text : '件名なし'}</b>
+            <small>
+              {items.length > 0 ? `${items.length - todo.length}/${items.length} 完了` : '作業なし'}
+              {carried ? `・${relLabel(taskDate(p!))}から` : ''}
+            </small>
+          </button>
+          {items.length > 0 && (
+            <span className="progress" aria-hidden>
+              <i style={{ width: `${((items.length - todo.length) / items.length) * 100}%` }} />
+            </span>
+          )}
+        </div>
+      )}
+      {open && (
+        <div className="project-body">
+          {todo.map((t) => (
+            <TaskRow key={t.id} t={t} teamId={teamId} />
+          ))}
+          {done.map((t) => (
+            <TaskRow key={t.id} t={t} teamId={teamId} />
+          ))}
+          {p && (
+            <form
+              className="add-sub"
+              onSubmit={(e) => {
+                e.preventDefault();
+                add();
+              }}
+            >
+              <input value={adding} onChange={(e) => setAdding(e.target.value)} placeholder="＋ 作業を追加" enterKeyHint="done" />
+              {adding.trim() && <button type="submit">追加</button>}
+            </form>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TaskRow({ t, teamId }: { t: Task; teamId: string }) {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(t.text);
-  const old = dayOf(t.createdAt) !== new Date().toDateString();
+  const old = !t.parent && taskDate(t) < dayKey();
   if (editing) {
     return (
       <div className="task editing">
@@ -271,7 +416,7 @@ function TaskRow({ t, teamId }: { t: Task; teamId: string }) {
       <button className="task-text" onClick={() => (setVal(t.text), setEditing(true))}>
         <span>{t.text}</span>
         <small>
-          {t.done ? `✓ ${t.doneByName ?? ''} ${hm(t.doneAt)}` : `${t.createdByName}${old ? '・前日から' : ''}`}
+          {t.done ? `✓ ${t.doneByName ?? ''} ${hm(t.doneAt)}` : `${t.createdByName}${old ? `・${relLabel(taskDate(t))}から` : ''}`}
         </small>
       </button>
     </div>

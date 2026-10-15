@@ -23,6 +23,7 @@
 - `src/store.ts` localStorage（お気に入り・最近・各ツールの入力状態・計算履歴・メモ・参加中チームID・設定）
 - `src/cloud.ts` 今日のワーク（Firebase Auth の Google ログイン＋Firestore のリアルタイム共有）。SDK は gstatic から動的 import（npm には入れない）、sw.js が SDK をキャッシュ
   - `keisoolTeams/{teamId}`（name・owner・members・names）、`keisoolTeams/{teamId}/tasks/{id}`
+  - tasks は kind（'project'＝工事件名／'task'＝作業）・parent（作業→工事件名のID）・date（予定日 YYYY-MM-DD。工事件名の中の作業は親の日付に従う）
   - 招待リンク `#/join/{teamId}`。teamId を知っているログイン済みの人が自分を members に足せる
 - `src/screens/*` ホーム（検索＋グループ絞り込み）・ツール・ワーク（＋参加）・メモ・履歴・設定
 - `src/styles.css` 全スタイル（ダーク）。グループ色は `--g-signal` などのCSS変数

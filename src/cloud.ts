@@ -3,7 +3,9 @@
 //
 // データの置き場所（Firestore）
 //   keisoolTeams/{teamId}            … { name, owner, members: [uid], names: { uid: 表示名 }, createdAt }
-//   keisoolTeams/{teamId}/tasks/{id} … { text, done, createdBy, createdByName, createdAt, doneBy, doneByName, doneAt }
+//   keisoolTeams/{teamId}/tasks/{id} … { text, kind, parent, done, createdBy, createdByName, createdAt, doneBy, doneByName, doneAt }
+//     kind: 'project' が親件名（工事件名）、それ以外は作業。作業の parent に親のIDが入る（なしは「件名なし」）
+//     date: 予定日（YYYY-MM-DD）。古いデータで無いときは createdAt の日付として扱う
 // teamId は推測できない長さ。招待リンク（#/join/{teamId}）を知っている人がログインして参加できる。
 import { useSyncExternalStore } from 'react';
 
@@ -22,6 +24,9 @@ export type Team = { id: string; name: string; owner: string; members: string[];
 export type Task = {
   id: string;
   text: string;
+  kind?: 'project' | 'task';
+  parent?: string;
+  date?: string; // 予定日 YYYY-MM-DD（工事件名と件名なしの作業に付く。工事件名の中の作業は親に従う）
   done: boolean;
   createdBy: string;
   createdByName: string;
@@ -226,13 +231,37 @@ export function watchTasks(team: string, cb: (tasks: Task[], err?: string) => vo
   };
 }
 
-export async function addTask(team: string, text: string) {
+export async function addTask(team: string, text: string, opt: { parent?: string; date?: string }) {
+  await add(team, text, opt.parent ? { kind: 'task', parent: opt.parent } : { kind: 'task', date: opt.date ?? dayKey() });
+}
+
+/** 親件名（工事件名）を追加 */
+export async function addProject(team: string, text: string, date: string) {
+  await add(team, text, { kind: 'project', date });
+}
+
+/** 予定日を変える（明日へ送る など） */
+export async function moveTask(team: string, id: string, date: string) {
+  const { fs, fsMod } = await sdk();
+  fsMod.updateDoc(fsMod.doc(fs, TEAMS, team, 'tasks', id), { date }).catch(() => {});
+}
+
+/** ローカル日付のキー（YYYY-MM-DD）。offset 日ずらせる */
+export function dayKey(base: Date | number = new Date(), offset = 0): string {
+  const d = new Date(base);
+  d.setDate(d.getDate() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export const taskDate = (t: Task) => t.date ?? dayKey(t.createdAt);
+
+async function add(team: string, text: string, extra: object) {
   const t = text.trim();
   if (!t) return;
   const { fs, fsMod } = await sdk();
   const u = me();
   // オフラインでも即反映（送信は電波が戻ったら自動）
-  fsMod.addDoc(tasksCol(fs, fsMod, team), { text: t, done: false, createdBy: u.uid, createdByName: u.name, createdAt: Date.now() }).catch(() => {});
+  fsMod.addDoc(tasksCol(fs, fsMod, team), { text: t, ...extra, done: false, createdBy: u.uid, createdByName: u.name, createdAt: Date.now() }).catch(() => {});
 }
 
 export async function setDone(team: string, task: Task, done: boolean) {
