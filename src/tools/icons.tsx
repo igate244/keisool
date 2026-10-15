@@ -80,3 +80,17 @@ export const IconGear = () => (
     <path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2 5.5 5.5" />
   </svg>
 );
+
+export const IconWork = () => (
+  <svg viewBox="0 0 24 24" {...P}>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="m8 12 2.5 2.5L16 9" />
+  </svg>
+);
+
+export const IconMemo = () => (
+  <svg viewBox="0 0 24 24" {...P}>
+    <path d="M6 3.5h9l3.5 3.5V20a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5Z" />
+    <path d="M9 10h6M9 14h6M9 18h3" />
+  </svg>
+);

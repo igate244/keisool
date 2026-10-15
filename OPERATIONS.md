@@ -17,6 +17,8 @@ GitHub Actions が自動でテスト → ビルド → Firebase Hosting に公�
 - Firebase Hosting：KEEP の Firebase プロジェクト（keep-app-30128）に相乗りしたサイト `keisool`
 - 公開用の鍵：GitHub の Secrets に `FIREBASE_SERVICE_ACCOUNT` として登録済み
 - Claude の GitHub アプリに keisool リポジトリへのアクセスを追加済み
+- 今日のワーク：Authentication の承認済みドメインに `keisool.web.app`、Firestore のルールに `keisoolTeams` の部分を追記
+  - KEEP 側でルールをデプロイし直すと消える可能性がある。ワークが「権限がない」になったら、ルールに keisoolTeams の部分が残っているか確認
 
 ## ふだんの運用
 | やりたいこと | やり方 |

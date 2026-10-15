@@ -5,16 +5,19 @@ import { useSyncExternalStore } from 'react';
 const KEY = 'keisool:v1';
 
 export type HistoryEntry = { id: string; tool: string; at: number; summary: string; state: unknown };
+export type Memo = { id: string; text: string; createdAt: number; updatedAt: number; pinned?: boolean };
 
 type Data = {
   favorites: string[];
   recent: string[];
   states: Record<string, unknown>;
   history: HistoryEntry[];
+  memos: Memo[];
+  teamId: string | null; // 今日のワークで使うチーム
   settings: { openLast: boolean };
 };
 
-const EMPTY: Data = { favorites: [], recent: [], states: {}, history: [], settings: { openLast: true } };
+const EMPTY: Data = { favorites: [], recent: [], states: {}, history: [], memos: [], teamId: null, settings: { openLast: true } };
 const HISTORY_MAX = 200;
 
 function load(): Data {
@@ -88,4 +91,29 @@ export function clearHistory() {
 
 export function setSetting<K extends keyof Data['settings']>(k: K, v: Data['settings'][K]) {
   commit({ ...data, settings: { ...data.settings, [k]: v } });
+}
+
+// ---------------------------------------------------------------- メモ（自分用・端末内）
+export function saveMemo(id: string, text: string) {
+  const now = Date.now();
+  const cur = data.memos.find((m) => m.id === id);
+  const memos = cur
+    ? data.memos.map((m) => (m.id === id ? { ...m, text, updatedAt: now } : m))
+    : [{ id, text, createdAt: now, updatedAt: now }, ...data.memos];
+  commit({ ...data, memos });
+}
+
+export function toggleMemoPin(id: string) {
+  commit({ ...data, memos: data.memos.map((m) => (m.id === id ? { ...m, pinned: !m.pinned } : m)) });
+}
+
+export function deleteMemo(id: string) {
+  commit({ ...data, memos: data.memos.filter((m) => m.id !== id) });
+}
+
+export const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+// ---------------------------------------------------------------- 今日のワーク
+export function setTeamId(id: string | null) {
+  commit({ ...data, teamId: id });
 }

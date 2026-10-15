@@ -842,3 +842,299 @@ svg {
   min-width: 0;
   padding: 0 10px;
 }
+
+/* ---------- 今日のワーク ---------- */
+.work {
+  --g: var(--accent);
+}
+.head-date {
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.intro {
+  text-align: left;
+}
+.intro p {
+  margin: 0;
+}
+.big-name {
+  font-size: 20px;
+}
+.primary-btn {
+  height: 48px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #04110f;
+  font-weight: 800;
+  font-size: 15px;
+}
+.primary-btn:disabled,
+.wide-btn:disabled {
+  opacity: 0.5;
+}
+.link-btn {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.account {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--dim);
+}
+.team-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: left;
+}
+.team-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.team-bar small {
+  color: var(--muted);
+}
+.team-more {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent);
+}
+.team-panel {
+  margin-top: 10px;
+}
+.members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.members span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 13px;
+}
+.members .me {
+  border-color: var(--accent);
+}
+.add-task {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.add-task input {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  outline: 0;
+  font-size: 16px;
+}
+.add-task input:focus {
+  border-color: var(--accent);
+}
+.add-task button {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #04110f;
+  font-size: 24px;
+  font-weight: 700;
+}
+.add-task button:disabled {
+  background: var(--surface-2);
+  color: var(--dim);
+}
+.task-list {
+  display: grid;
+  gap: 8px;
+}
+.task {
+  display: flex;
+  align-items: stretch;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.check {
+  flex: none;
+  width: 54px;
+  display: grid;
+  place-items: center;
+}
+.check svg {
+  width: 26px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 8px;
+  border: 2px solid var(--line-2);
+  fill: none;
+  stroke: transparent;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.task.done .check svg {
+  background: var(--accent);
+  border-color: var(--accent);
+  stroke: #04110f;
+}
+.task-text {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  padding: 11px 12px 11px 0;
+  text-align: left;
+  min-width: 0;
+}
+.task-text span {
+  font-size: 15.5px;
+  overflow-wrap: anywhere;
+}
+.task-text small {
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.task.done .task-text span {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.task.editing {
+  display: grid;
+  padding: 10px;
+  gap: 8px;
+  border-color: var(--accent);
+}
+.task.editing input {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  outline: 0;
+  font-size: 16px;
+}
+.task-edit-actions,
+.clear-row {
+  display: flex;
+  gap: 8px;
+}
+.task-edit-actions button,
+.clear-row button {
+  flex: 1;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.clear-row {
+  margin-top: 16px;
+}
+.team-panel .clear-row {
+  margin-top: 0;
+}
+.clear-row button:disabled {
+  opacity: 0.4;
+}
+.danger {
+  color: var(--danger) !important;
+}
+.done-head {
+  margin: 10px 2px 0;
+  font-size: 12px;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+/* ---------- メモ ---------- */
+.text-btn.accent {
+  color: var(--accent);
+  font-weight: 700;
+}
+.memo-search {
+  margin-bottom: 12px;
+}
+.memo-list {
+  display: grid;
+  gap: 8px;
+}
+.memo-card {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: left;
+  position: relative;
+}
+.memo-top {
+  display: flex;
+  gap: 6px;
+  padding-right: 44px;
+}
+.memo-top b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pin {
+  color: #ffd166;
+}
+.memo-card small {
+  color: var(--muted);
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.memo-card time {
+  position: absolute;
+  top: 13px;
+  right: 14px;
+  font-size: 11px;
+  color: var(--dim);
+}
+.memo-edit textarea {
+  width: 100%;
+  min-height: calc(100dvh - 220px);
+  padding: 14px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  outline: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+  resize: none;
+}
+.memo-edit textarea:focus {
+  border-color: var(--accent);
+}
+.memo-edit .text-btn {
+  display: block;
+  margin: 14px auto 0;
+}
+.bottom-nav button {
+  font-size: 10.5px;
+}

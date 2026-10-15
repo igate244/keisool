@@ -39,7 +39,7 @@ export function SettingsScreen() {
       </section>
       <section className="card about">
         <p>
-          <b>Keisool</b> は計装保全の計算用の電卓アプリ。データはこの端末の中だけに保存され、外には送らない。
+          <b>Keisool</b> は計装保全の電卓アプリ。計算履歴・メモはこの端末の中だけに保存。「今日のワーク」のタスクだけはチームで共有するためクラウド（Firebase）に保存される。
         </p>
         <p>計算式：熱電対 JIS C 1602（ITS-90）、測温抵抗体 JIS C 1604／IEC 60751。現場で使う前に重要な値は規格表でも確認してね。</p>
       </section>
