@@ -1,0 +1,115 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { tcEmf, tcTemp, tcTempFromMeasured, tcMeasuredEmf, TC_TYPES, tcRange, tcInverseMin } from '../src/calc/thermocouple';
+import { rtdResistance, rtdTemp } from '../src/calc/rtd';
+import { pctToPv, pvToPct, sigToPct, pctToSig, table } from '../src/calc/signal';
+import { convert } from '../src/calc/units';
+import { levelRange } from '../src/calc/dplevel';
+
+const near = (a: number, b: number, tol: number, msg = '') => assert.ok(Math.abs(a - b) <= tol, `${msg} ${a} ≠ ${b} (±${tol})`);
+
+test('熱電対：JIS/NIST 基準起電力表の値と一致', () => {
+  // [種類, 温度℃, mV]（NIST SRD 60 / JIS C 1602 の表値）
+  const ref: [any, number, number][] = [
+    ['K', -200, -5.891], ['K', -100, -3.554], ['K', 100, 4.096], ['K', 200, 8.138], ['K', 500, 20.644], ['K', 1000, 41.276], ['K', 1372, 54.886],
+    ['J', -100, -4.633], ['J', 100, 5.269], ['J', 500, 27.393], ['J', 1000, 57.953],
+    ['T', -200, -5.603], ['T', -100, -3.379], ['T', 100, 4.279], ['T', 400, 20.872],
+    ['E', -100, -5.237], ['E', 100, 6.319], ['E', 500, 37.005], ['E', 1000, 76.373],
+    ['N', 100, 2.774], ['N', 500, 16.748], ['N', 1000, 36.256],
+    ['R', 100, 0.647], ['R', 1000, 10.506], ['R', 1500, 17.451],
+    ['S', 100, 0.646], ['S', 1000, 9.587], ['S', 1500, 15.582],
+    ['B', 500, 1.242], ['B', 1000, 4.834], ['B', 1500, 10.099], ['B', 1800, 13.591],
+  ];
+  for (const [t, c, mv] of ref) near(tcEmf(t, c), mv, 0.0015, `${t} ${c}℃`);
+});
+
+test('熱電対：0℃で起電力0（区間境界）', () => {
+  for (const t of TC_TYPES) if (t !== 'B') near(tcEmf(t, 0), 0, 1e-6, t);
+  near(tcMeasuredEmf('K', 500, 0), 20.644, 0.0015);
+});
+
+test('熱電対：逆変換は往復で一致', () => {
+  for (const t of TC_TYPES) {
+    const [lo, hi] = tcRange(t);
+    const start = Math.max(lo + 1, tcInverseMin(t));
+    for (let c = start; c <= hi; c += (hi - start) / 37) {
+      near(tcTemp(t, tcEmf(t, c)), c, 1e-6, `${t} ${c}`);
+    }
+  }
+});
+
+test('熱電対：冷接点補償', () => {
+  // K、測定800℃・冷接点25℃ → 端子電圧 33.277 − 1.000 = 32.277mV
+  near(tcMeasuredEmf('K', 800, 25), 33.275 - 1.0, 0.003);
+  near(tcTempFromMeasured('K', tcMeasuredEmf('K', 800, 25), 25), 800, 1e-6);
+});
+
+test('熱電対：範囲外は NaN', () => {
+  assert.ok(Number.isNaN(tcEmf('T', 500)));
+  assert.ok(Number.isNaN(tcTemp('K', 100)));
+});
+
+test('測温抵抗体：JIS C 1604 規準抵抗値', () => {
+  near(rtdResistance('Pt100', 0), 100, 1e-9);
+  near(rtdResistance('Pt100', 100), 138.5055, 1e-4);
+  near(rtdResistance('Pt100', -100), 60.2558, 1e-4);
+  near(rtdResistance('Pt100', -200), 18.5201, 1e-4);
+  near(rtdResistance('Pt100', 850), 390.4811, 1e-4);
+  near(rtdResistance('Pt1000', 100), 1385.055, 1e-3);
+  near(rtdResistance('JPt100', 100), 139.16, 0.02);
+});
+
+test('測温抵抗体：逆変換', () => {
+  for (const t of [-200, -150.5, -40, -0.1, 0, 25, 100, 400, 850]) {
+    near(rtdTemp('Pt100', rtdResistance('Pt100', t)), t, 1e-7, `${t}`);
+  }
+  near(rtdTemp('Pt100', 138.5055), 100, 1e-3);
+});
+
+test('mA換算：リニア', () => {
+  const sc = { sig: '4-20mA' as const, lrv: 0, urv: 200, sqrt: false };
+  assert.equal(pctToSig('4-20mA', 50), 12);
+  assert.equal(sigToPct('4-20mA', 8), 25);
+  assert.equal(pctToPv(sc, 25), 50);
+  near(pvToPct(sc, 150), 75, 1e-12);
+  const neg = { sig: '1-5V' as const, lrv: -50, urv: 150, sqrt: false };
+  near(pctToPv(neg, sigToPct('1-5V', 2)), 0, 1e-12);
+});
+
+test('mA換算：開平', () => {
+  const sc = { sig: '4-20mA' as const, lrv: 0, urv: 100, sqrt: true };
+  // 流量50% → 差圧25% → 8mA
+  near(pctToSig('4-20mA', pvToPct(sc, 50)), 8, 1e-12);
+  near(pctToPv(sc, sigToPct('4-20mA', 8)), 50, 1e-12);
+  const rows = table(sc, [0, 50, 100]);
+  near(rows[1].sig, 8, 1e-12);
+  assert.equal(rows[2].sig, 20);
+});
+
+test('単位換算', () => {
+  near(convert('pressure', 'kgf/cm2', 'kPa', 1), 98.0665, 1e-9);
+  near(convert('pressure', 'mmH2O', 'kPa', 1000), 9.80665, 1e-9);
+  near(convert('pressure', 'psi', 'kPa', 14.5038), 100, 1e-3);
+  near(convert('pressure', 'atm', 'mmHg', 1), 760, 1e-3);
+  near(convert('flow', 'm3/h', 'L/min', 6), 100, 1e-9);
+  near(convert('flow', 'GPM', 'm3/h', 1), 0.2271247, 1e-6);
+  near(convert('temp', 'C', 'F', 100), 212, 1e-9);
+  near(convert('temp', 'K', 'C', 0), -273.15, 1e-9);
+});
+
+test('差圧レベル計', () => {
+  // 開放タンク、比重1.0、0〜2000mm、伝送器はタップと同じ高さ
+  let r = levelRange({ mode: 'open', sg: 1, l0: 0, l1: 2000, h: 0, sgHP: 1, d: 0, sgLP: 1 });
+  assert.deepEqual([r.lrv, r.urv, r.kind], [0, 2000, 'none']);
+  // 開放タンク、比重0.8、伝送器がタップより500mm下（導圧管は同じ液）→ ゼロサプレッション
+  r = levelRange({ mode: 'open', sg: 0.8, l0: 0, l1: 2000, h: 500, sgHP: 0.8, d: 0, sgLP: 1 });
+  near(r.lrv, 400, 1e-9);
+  near(r.urv, 2000, 1e-9);
+  assert.equal(r.kind, 'suppression');
+  // 密閉・両側ダイアフラムシール（封入液0.93）、比重1.1、タップ間3000mm、伝送器は下タップより1000mm下
+  r = levelRange({ mode: 'wet', sg: 1.1, l0: 0, l1: 3000, h: 1000, sgHP: 0.93, d: 3000, sgLP: 0.93 });
+  near(r.lrv, -2790, 1e-9);
+  near(r.urv, 510, 1e-9);
+  near(r.span, 3300, 1e-9);
+  assert.equal(r.kind, 'elevation');
+});
